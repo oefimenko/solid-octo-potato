@@ -1,14 +1,24 @@
 
+defmodule API.Router.Ping do
+  use Maru.Router
+    
+  resource do
+    get do
+      text(conn, "Alive")
+    end
+  end
+end
+
 defmodule API.Router.Login do
   use Maru.Router
     
   resource :login do
     params do
-      requires :username, type: String
-      requires :password, type: String
+      requires :user_name, type: String
     end
     post do
-      json(conn, params)
+      Room.Lobby.login(user_name)
+      json(conn, "")
     end
   end
 end
@@ -17,13 +27,14 @@ defmodule API.Router.Skirmish do
   use Maru.Router   
 
   resource :skirmish do
+    params do
+      requires :user_name, type: Integer
+    end
     post do
-      text(conn, "Please, wait for oponent")
+      Room.Lobby.match(user_name)
+      json(conn, "Please, wait for oponent")
     end
 
-    delete do
-      text(conn, "Cancel skirmish wait")
-    end
   end
 
 end
@@ -39,6 +50,7 @@ defmodule API.Router do
 
   mount API.Router.Login
   mount API.Router.Skirmish
+  mount API.Router.Ping
 
   rescue_from :all do
     conn

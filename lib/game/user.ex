@@ -4,8 +4,14 @@ defmodule Game.User do
   Game User:
   side :: integer
   squads :: [Game.Squad]
+  in_game :: bool
+  is_waiting :: bool
   """
 
-  defstruct side: nil, squads: nil
+  defstruct name: "Unknown", 
+            side: nil, 
+            squads: nil, 
+            in_game: False, 
+            is_waiting: False
 
 end
