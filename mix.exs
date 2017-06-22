@@ -16,7 +16,7 @@ defmodule ElixirTest.Mixfile do
   def application do
     # Specify extra applications you'll use from Erlang/Elixir
     [
-      mod: {Rooms.Lobby, []},
+      mod: {Skirmish, []},
       extra_applications: [:logger]
     ]
   end

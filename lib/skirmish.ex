@@ -6,7 +6,7 @@ defmodule Skirmish do
     import Supervisor.Spec, warn: false
 
     children = [
-      worker(Skirmish.MessageReceiver, [])
+      worker(Rooms.Lobby, [])
     ]
 
     # Start the main supervisor, and restart failed children individually

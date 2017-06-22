@@ -17,8 +17,9 @@ defmodule API.Router.Login do
       requires :user_name, type: String
     end
     post do
-      Room.Lobby.login(user_name)
-      json(conn, "")
+      ip = conn.remote_ip |> Tuple.to_list |> Enum.join(".")
+      Rooms.Lobby.login(params.user_name, ip)
+      json(conn, %{})
     end
   end
 end
@@ -31,7 +32,7 @@ defmodule API.Router.Skirmish do
       requires :user_name, type: Integer
     end
     post do
-      Room.Lobby.match(user_name)
+      Rooms.Lobby.match(params.user_name)
       json(conn, "Please, wait for oponent")
     end
 
