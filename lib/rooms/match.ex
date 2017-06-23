@@ -13,9 +13,8 @@ defmodule Rooms.Match do
   defstruct user_0: nil,
             user_1: nil,
             squads: nil,
-            simulation: nil,
-            connection: nil
-
+            serializer: nil,
+            conn: nil
 
   def start_link(user_0, user_1) do
     GenServer.start_link(__MODULE__, {user_0, user_1}, [])
@@ -25,8 +24,6 @@ defmodule Rooms.Match do
 
   # Genserver Callbacks
   def init({user_0, user_1}) do
-    simulation = 0
-    connection = 0
     squads = [
         %Game.Squad{side: 0, name: Enum.at(user_0.squads, 0)},
         %Game.Squad{side: 1, name: Enum.at(user_1.squads, 0)}
@@ -35,15 +32,29 @@ defmodule Rooms.Match do
         user_0: user_0, 
         user_1: user_1, 
         squads: squads, 
-        simulation: simulation, 
-        connection: connection
+        serializer: spawn(Game.Serializer, :run, []),
+        conn: Conn.UDP.start_link(self(), user_0.ip, user_1.ip)
     }
+    Enum.each(squads, fn(sq) -> 
+      Conn.UDP.send(state.conn, serialize(sq, state.serializer)) 
+    end)
     {:ok, state}
   end
 
   def handle_cast({:new_path, squad_name}, state) do
-    IO.puts(squad_name)
     {:noreply, state}
+  end
+
+  # private
+  defp serialize(obj, serializer) do
+    type = case obj do
+      %Game.Squad{} -> :squad
+    end
+    send(serializer, {self(), type, obj})
+    data = receive do
+      {data} -> data
+    end
+    data
   end
 
 end

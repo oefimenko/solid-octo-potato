@@ -17,7 +17,7 @@ defmodule API.Router.Login do
       requires :user_name, type: String
     end
     post do
-      ip = conn.remote_ip |> Tuple.to_list |> Enum.join(".")
+      ip = conn.remote_ip
       Rooms.Lobby.login(params.user_name, ip)
       json(conn, %{})
     end
