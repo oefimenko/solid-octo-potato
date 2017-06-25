@@ -6,6 +6,6 @@ defmodule Game.Vector do
     y :: float
   """
 
-  defstruct x: 0.0, y: 0.0
+  defstruct x: 0, y: 0
 
 end
