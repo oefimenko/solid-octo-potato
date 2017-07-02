@@ -29,17 +29,32 @@ defmodule API.Router.Skirmish do
 
   resource :skirmish do
     params do
-      requires :user_name, type: Integer
+      requires :user_name, type: String
     end
     post do
       Rooms.Lobby.match(params.user_name)
-      json(conn, "Please, wait for oponent")
+      json(conn, %{})
     end
 
   end
 
 end
 
+defmodule API.Router.Training do
+  use Maru.Router   
+
+  resource :training do
+    params do
+      requires :user_name, type: String
+    end
+    post do
+      Rooms.Lobby.training(params.user_name)
+      json(conn, %{})
+    end
+
+  end
+
+end
 
 defmodule API.Router do
   use Maru.Router
@@ -52,6 +67,7 @@ defmodule API.Router do
   mount API.Router.Login
   mount API.Router.Skirmish
   mount API.Router.Ping
+  mount API.Router.Training
 
   rescue_from :all do
     conn

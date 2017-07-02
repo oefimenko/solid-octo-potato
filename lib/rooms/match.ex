@@ -17,8 +17,8 @@ defmodule Rooms.Match do
             deserializer: nil,
             conn: nil
 
-  def start_link(user_0, user_1) do
-    GenServer.start_link(__MODULE__, {user_0, user_1}, [])
+  def start_link(user_0, user_1, l_port \\ 21001) do
+    GenServer.start_link(__MODULE__, {user_0, user_1, l_port}, [])
   end
 
   def receive(pid, data) do
@@ -26,24 +26,23 @@ defmodule Rooms.Match do
   end
 
   # Genserver Callbacks
-  def init({user_0, user_1}) do
-    port = 21001
-    {:ok, serializer} = spawn_link(Conn.Serializer, :run, [])
-    {:ok, deserializer} = spawn_link(Conn.Deserializer, :run, [])
+  def init({user_0, user_1, port}) do
+    serializer = spawn_link(Conn.Serializer, :run, [])
+    deserializer = spawn_link(Conn.Deserializer, :run, [])
     {:ok, conn} = Conn.UDP.start_link(self(), user_0.ip, user_1.ip, port)
     squads = [
-        %Game.Squad{side: 0, name: Enum.at(user_0.squads, 0)},
-        %Game.Squad{side: 1, name: Enum.at(user_1.squads, 0)}
+        %Game.Squad{side: 0, type: Enum.at(user_0.squads, 0), name: user_0.name <> Enum.at(user_0.squads, 0), position: %Game.Vector{x: 2000, y: 2000}},
+        %Game.Squad{side: 1, type: Enum.at(user_1.squads, 0), name: user_1.name <> Enum.at(user_1.squads, 0), position: %Game.Vector{x: -2000, y: -2000}}
     ]
     state = %__MODULE__{
-        user_0: user_0, 
-        user_1: user_1, 
-        squads: squads, 
+        user_0: user_0,
+        user_1: user_1,
+        squads: squads,
         serializer: serializer,
         deserializer: deserializer,
         conn: conn
     }
-    init_msg = {port, user_0, 0, user_1, 1, squads}
+    init_msg = {port, user_0.name, 0, user_1.name, 1, squads}
     Conn.UDP.send(:sync, :ack, state.conn, serializer |> serialize({0, init_msg}))
     {:ok, state}
   end
@@ -59,7 +58,7 @@ defmodule Rooms.Match do
   defp serialize(serializer, {type, obj}) do
     send(serializer, {self(), type, obj})
     data = receive do
-      {data} -> data
+      (data) -> data
     end
     data
   end

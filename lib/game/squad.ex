@@ -20,9 +20,10 @@ defmodule Game.Squad do
 
   defstruct side: nil,
             name: nil,
+            type: nil,
             health: nil,
             damage: nil,
-            last_attack: 0.0,
+            last_attack: 0,
             position: nil,
             rotation: nil,
             path: nil,
@@ -33,4 +34,22 @@ defmodule Game.Squad do
             offensive_skill: nil,
             defensive_skill: nil
 
+  def serialize(squad) do
+    "#{squad.type}:" <>                                 #0
+    "#{squad.side}:" <>                                 #1
+    "#{squad.name}:" <>                                 #2
+    "#{squad.health}:" <>                               #3
+    "#{squad.damage}:" <>                               #4
+    "#{squad.last_attack}:" <>                          #5
+    "#{Game.Vector.serialize(squad.position)}:" <>      #6-7
+    "#{squad.rotation}:" <>                             #8
+    "#{squad.formation}:" <>                            #9
+    "#{squad.offensive_skill}:" <>                      #10
+    "#{squad.defensive_skill}:" <>                      #11
+    "#{Game.Vector.serialize(squad.speed)}:" <>         #12-13
+    "#{Game.Vector.serialize(squad.bounds)}:" <>        #14-15
+    "#{Game.Vector.serialize(squad.local_aim)}:" <>     #16-17
+    "#{Game.Path.serialize(squad.path)}"                #18-end
+  end
+  
 end

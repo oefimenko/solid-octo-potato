@@ -8,45 +8,33 @@ defmodule Conn.Serializer do
     run()
   end
 
+  # Init message
   def serialize(0, {port, id_0, s_0, id_1, s_1, squads}) do
     s_squads = squads 
-      |> Enum.map(fn(e) -> serialize(:squad, e) end) 
+      |> Enum.map(fn(e) -> Game.Squad.serialize(e) end) 
       |> Enum.join(";")
+      
     "0;#{port};#{id_0};#{s_0};#{id_1};#{s_1};#{s_squads}"
   end
 
+  # State message
   def serialize(1, _squad) do
     ""
   end
 
+  # Path provided
   def serialize(2, squad) do
-    serialize(:squad, squad) <> ":" <> serialize(:path, squad.path)
+    "2" <> ";" <> Game.Squad.serialize(squad)
   end  
 
-  def serialize(3, _squad) do
-    ""
+  # Formation message
+  def serialize(3, squad) do
+    "3" <> ";" <> Game.Squad.serialize(squad)
   end
 
-  def serialize(4, _squad) do
-    ""
-  end
-
-  # HELPERS
-
-  def serialize(:squad, squad) do
-    "#{squad.side}:#{squad.name}"
-  end
-  
-  def serialize(:path, path) do
-    Enum.map_join(path.points, ":", fn(p) -> serialize(:vector, p) end)
-  end
-
-  def serialize(:unit, _unit) do
-    ""
-  end
-
-  def serialize(:vector, vector) do
-    "#{vector.x}:#{vector.y}"
+  # Skill message
+  def serialize(4, squad) do
+    "4" <> ";" <> Game.Squad.serialize(squad)
   end
 
 end

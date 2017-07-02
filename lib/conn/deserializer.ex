@@ -13,7 +13,7 @@ defmodule Conn.Deserializer do
   end
   
   def deserialize(<<1, ";", data :: binary>>) do
-    raw = String.split(data, ":", trim: true)
+    raw = String.split(data, ";", trim: true)
     {1, %Game.Squad{
         side: Enum.at(raw, 0, nil),
         name: Enum.at(raw, 1, nil)
@@ -21,49 +21,27 @@ defmodule Conn.Deserializer do
   end
 
   def deserialize(<<2, ";", data :: binary>>) do
-    raw = String.split(data, ":", trim: true)
+    raw = String.split(data, ";", trim: true)
     {2, %Game.Squad{
-        side: Enum.at(raw, 0, nil),
-        name: Enum.at(raw, 1, nil),
-        path: deserialize(:path, Enum.slice(raw, 2..-1))
+        name: Enum.at(raw, 0, nil),
+        path: Game.Path.deserialize(List.last(raw))
     }}
   end
 
   def deserialize(<<3, ";", data :: binary>>) do
-    raw = String.split(data, ":", trim: true)
+    raw = String.split(data, ";", trim: true)
     {3, %Game.Squad{
-        side: Enum.at(raw, 0, nil),
-        name: Enum.at(raw, 1, nil),
-        formation: Enum.at(raw, 2, nil),
+        name: Enum.at(raw, 0, nil),
+        formation: Enum.at(raw, 1, nil),
     }}
   end
 
   def deserialize(<<4, ";", data :: binary>>) do
-    raw = String.split(data, ":", trim: true)
+    raw = String.split(data, ";", trim: true)
     {4, %Game.Squad{
-        side: Enum.at(raw, 0, nil),
         name: Enum.at(raw, 1, nil),
-        offensive_skill: Enum.at(raw, 2, nil),
+        offensive_skill: Enum.at(raw, 1, nil),
     }}
   end
 
-  def deserialize(:path, path) do
-    slice = fn 
-        ({[x, y | rest], fun}) -> fun.({path, [%Game.Vector{x: x, y: y}], fun})
-        ({[x, y | rest], list, fun}) -> fun.({path, list ++ [%Game.Vector{x: x, y: y}], fun})
-        ({[], list, fun}) -> list
-    end
-    %Game.Path{points: slice.({path, slice})}
-  end
-
-  def deserialize(:unit, unit) do
-    %Game.Unit{}
-  end
-
-  def deserialize(:vector, vector) do
-    %Game.Vector{
-        x: Enum.at(vector, 0),
-        x: Enum.at(vector, 1),
-    }
-  end
 end

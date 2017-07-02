@@ -17,8 +17,13 @@ defmodule App.User do
             is_waiting: False
   
   def generate_user(name, ip_addr) do
-    squads = ["Skeletons", "Spiders"]
+    squads = ["SkeletonSquad", "SpiderSquad"]
     %__MODULE__{name: name, squads: Enum.take_random(squads, 1), ip: ip_addr}
+  end
+
+  def test_user do
+    squads = ["SkeletonSquad", "SpiderSquad"]
+    %__MODULE__{name: "Test", squads: Enum.take_random(squads, 1)}
   end
 
 end

@@ -24,10 +24,14 @@ defmodule Rooms.Lobby do
     GenServer.cast(__MODULE__, {:match, user_name})
   end
 
+  def training(user_name) do 
+    GenServer.cast(__MODULE__, {:training, user_name})
+  end
+
+
   # GenServer callbacks
   
   def init(:ok) do
-    # Received 2nd argument from start_link, returns :ok and initial state
     {:ok, %{}}
   end
 
@@ -36,7 +40,7 @@ defmodule Rooms.Lobby do
   end
 
   def handle_cast({:add, user_name, ip}, list) do
-    {:noreply, %{list | user_name => App.User.generate_user(user_name, ip)}}
+    {:noreply, Map.put(list, user_name, App.User.generate_user(user_name, ip))}
   end
 
   def handle_cast({:delete, user_name}, list) do
@@ -47,13 +51,21 @@ defmodule Rooms.Lobby do
     waiting_user = Enum.find(list, nil, fn(user) -> user.is_waiting == true end)
     state = if waiting_user != nil do
       user_0 =  %{waiting_user | is_waiting: false, side: 0, in_game: true}
-      user_1 =  %{Map.fetch(list, user_name) | is_waiting: false, side: 1, in_game: true}
+      user_1 =  %{Map.fetch!(list, user_name) | is_waiting: false, side: 1, in_game: true}
       Rooms.Match.start_link(user_0, user_1)
       %{list | user_name => user_1, user_0.name => user_0}
     else
-      user = %{Map.fetch(list, user_name) | is_waiting: true}
+      {:ok, user} = %{Map.fetch!(list, user_name) | is_waiting: true}
       %{list | user_name => user}
     end
+    {:noreply, state}
+  end
+
+  def handle_cast({:training, user_name}, list) do
+    user_0 =  %{Map.fetch!(list, user_name) | is_waiting: false, side: 1, in_game: true}
+    port = Enum.random(22001..32001)
+    Rooms.Match.start_link(user_0, App.User.test_user, port)
+    state = %{list | user_name => user_0}
     {:noreply, state}
   end
 

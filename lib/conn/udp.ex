@@ -5,14 +5,18 @@ defmodule Conn.UDP do
   @client_port 21000
   @ack_timeout 1500
 
-  def start_link(match, ip0, ip1, port \\ 21001) do
-    GenServer.start_link(__MODULE__, {match, {ip0, ip1}, port}, [])
+  def start_link(match, ip0, nil, port) do
+    GenServer.start_link(__MODULE__, {match, [ip0], port}, [])
   end
 
-  def init({match, {ip0, ip1}, port}) do
+  def start_link(match, ip0, ip1, port) do
+    GenServer.start_link(__MODULE__, {match, [ip0, ip1], port}, [])
+  end
+
+  def init({match, ips, port}) do
     {:ok, socket} = :gen_udp.open(port, [:binary])
     state = %{
-      ips: [ip0, ip1],
+      ips: ips,
       match: match,
       socket: socket,
       ack_list: %{}
@@ -62,7 +66,7 @@ defmodule Conn.UDP do
   end
 
   # Ignore everything else
-  def handle_info(_, state) do
+  def handle_info(_s, state) do
     {:noreply, state}
   end
   
@@ -114,6 +118,7 @@ defmodule Conn.UDP do
 
   # type     :: 0 msg || 1 ack
   # need_ack :: 0 no || 1 yes
+  # time     :: 16
   # structure ->
   # << type, need_ack, time, sep(0), data >>
   defp with_headers({type, need_ack}, data) do
@@ -130,7 +135,7 @@ end
 # Conn.UDP.send(:async, :ack, pid, "Uniq message")
 
 # # {:ok, socket} = :gen_udp.open(21000, [:binary])
-# receive do; (_) -> IO.puts("RECEIVED!!!!!"); :gen_udp.send(socket, {127,0,0,1}, 21001, "RESPONSE"); end
+# receive do; (_) -> .puts("RECEIVED!!!!!"); :gen_udp.send(socket, {127,0,0,1}, 21001, "RESPONSE"); end
 # :gen_udp.send(socket, {127,0,0,1}, 21001, "RESPONSE")
 
 # fun = fn(fun) -> 
