@@ -22,7 +22,7 @@ use Mix.Config
 #
 if System.get_env("PORT") do
     config :maru, API.Router,
-        http: [port: String.to_integer(System.get_env("PORT"))]
+        http: [port: {:system, "PORT"}]
 else
     config :maru, API.Router, http: [port: 8880]
 end
