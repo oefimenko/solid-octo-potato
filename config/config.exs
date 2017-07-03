@@ -20,7 +20,12 @@ use Mix.Config
 #
 #     config :logger, level: :info
 #
-config :maru, API.Router, http: [port: 8880]
+if System.get_env("PORT") do
+    config :maru, API.Router,
+        http: [port: String.to_integer(System.get_env("PORT"))]
+else
+    config :maru, API.Router, http: [port: 8880]
+end
 
 # It is also possible to import configuration files, relative to this
 # directory. For example, you can emulate configuration per environment
