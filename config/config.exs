@@ -22,9 +22,9 @@ use Mix.Config
 #
 if System.get_env("PORT") do
     config :maru, API.Router,
-        https: [port: String.to_integer(System.get_env("PORT"))]
+        http: [port: String.to_integer(System.get_env("PORT"))]
 else
-    config :maru, API.Router, https: [port: 8880]
+    config :maru, API.Router, http: [port: 8880]
 end
 
 # It is also possible to import configuration files, relative to this
