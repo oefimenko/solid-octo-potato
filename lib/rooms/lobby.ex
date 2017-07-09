@@ -48,14 +48,15 @@ defmodule Rooms.Lobby do
   end
 
   def handle_cast({:match, user_name}, list) do
-    waiting_user = Enum.find(list, nil, fn(user) -> user.is_waiting == true end)
+    waiting_user = Enum.find(list, nil, fn({_name, user}) -> user.is_waiting == true end)
     state = if waiting_user != nil do
-      user_0 =  %{waiting_user | is_waiting: false, side: 0, in_game: true}
-      user_1 =  %{Map.fetch!(list, user_name) | is_waiting: false, side: 1, in_game: true}
+      {_name, waiting} = waiting_user
+      user_0 = %{waiting | is_waiting: false, side: 0, in_game: true}
+      user_1 = %{Map.fetch!(list, user_name) | is_waiting: false, side: 1, in_game: true}
       Rooms.Match.start_link(user_0, user_1)
       %{list | user_name => user_1, user_0.name => user_0}
     else
-      {:ok, user} = %{Map.fetch!(list, user_name) | is_waiting: true}
+      user = %{Map.fetch!(list, user_name) | is_waiting: true}
       %{list | user_name => user}
     end
     {:noreply, state}
