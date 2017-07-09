@@ -53,7 +53,8 @@ defmodule Rooms.Lobby do
       {_name, waiting} = waiting_user
       user_0 = %{waiting | is_waiting: false, side: 0, in_game: true}
       user_1 = %{Map.fetch!(list, user_name) | is_waiting: false, side: 1, in_game: true}
-      Rooms.Match.start_link(user_0, user_1)
+      port = Enum.random(22001..32001)
+      Rooms.Match.start_link(user_0, user_1, port)
       %{list | user_name => user_1, user_0.name => user_0}
     else
       user = %{Map.fetch!(list, user_name) | is_waiting: true}
