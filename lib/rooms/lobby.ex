@@ -40,6 +40,7 @@ defmodule Rooms.Lobby do
   end
 
   def handle_cast({:add, user_name, ip}, list) do
+    IO.inspect({"Login", user_name, ip})
     {:noreply, Map.put(list, user_name, App.User.generate_user(user_name, ip))}
   end
 
@@ -48,6 +49,7 @@ defmodule Rooms.Lobby do
   end
 
   def handle_cast({:match, user_name}, list) do
+    IO.inspect({"match", user_name})
     waiting_user = Enum.find(list, nil, fn({_name, user}) -> user.is_waiting == true end)
     state = if waiting_user != nil do
       {_name, waiting} = waiting_user
@@ -64,6 +66,7 @@ defmodule Rooms.Lobby do
   end
 
   def handle_cast({:training, user_name}, list) do
+    IO.inspect({"training", user_name})
     user_0 =  %{Map.fetch!(list, user_name) | is_waiting: false, side: 1, in_game: true}
     port = Enum.random(22001..32001)
     Rooms.Match.start_link(user_0, App.User.test_user, port)

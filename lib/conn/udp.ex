@@ -25,14 +25,17 @@ defmodule Conn.UDP do
   end
 
   def send(:sync, :ack, pid, data) do
+    IO.inspect({:sync, data})
     GenServer.call(pid, {:sync_ack, data}, 15000)
   end
 
   def send(:async, :ack, pid, data) do
+    IO.inspect({:async, :ack, data})
     GenServer.cast(pid, {:async_ack, data})
   end
 
   def send(:async, :no_ack, pid, data) do
+    IO.inspect({:async, :no_ack, data})
     GenServer.cast(pid, {:async_no_ack, data})
   end
 
