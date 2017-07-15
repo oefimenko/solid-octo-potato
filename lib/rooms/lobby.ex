@@ -51,23 +51,25 @@ defmodule Rooms.Lobby do
   def handle_call({:match, user_name}, _from, list) do
     IO.inspect({"match", user_name})
     waiting_user = Enum.find(list, nil, fn({_name, user}) -> user.is_waiting == true end)
-    state = if waiting_user != nil do
+    
+    {state, port} = if waiting_user != nil do
       {_name, waiting} = waiting_user
-      user_0 = %{waiting | is_waiting: false, side: 0}
-      user_1 = %{Map.fetch!(list, user_name) | is_waiting: false, side: 1, in_game: true}
-      port = Enum.random(22001..32001)
-      Rooms.Match.start_link(user_0, user_1, port)
+      user_0 = %{waiting | is_waiting: false, in_game: true}
+      user_1 = %{Map.fetch!(list, user_name) | is_waiting: false, in_game: true, room: user_0.room}
+      Rooms.Match.start_link(user_0, user_1, user_0.room)
       %{list | user_name => user_1, user_0.name => user_0}
     else
-      user = %{Map.fetch!(list, user_name) | is_waiting: true}
-      %{list | user_name => user}
+      port = Enum.random(22001..32001)
+      user = %{Map.fetch!(list, user_name) | is_waiting: true, room: port}
+      {%{list | user_name => user}, port}
     end
-    {:reply, %{}, state}
+
+    {:reply, port, state}
   end
 
   def handle_call({:training, user_name}, _from, list) do
     IO.inspect({"training", user_name})
-    user_0 =  %{Map.fetch!(list, user_name) | is_waiting: false, side: 1, in_game: true}
+    user_0 =  %{Map.fetch!(list, user_name) | is_waiting: false, in_game: true}
     port = Enum.random(22001..32001)
     {:ok, pid} = Rooms.Match.start_link(user_0, App.User.test_user, port)
     Rooms.Match.receive(pid,  <<1, 0, "Test;">>)

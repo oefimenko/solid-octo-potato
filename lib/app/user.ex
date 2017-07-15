@@ -2,7 +2,7 @@
 defmodule App.User do
   @doc ~S"""
   Game User:
-  side :: integer
+  room :: integer
   ip :: string
   squads :: [Game.Squad]
   in_game :: bool
@@ -11,10 +11,10 @@ defmodule App.User do
 
   defstruct name: "Unknown",
             ip: nil,
-            side: nil,
             squads: nil,
             in_game: False,
-            is_waiting: False
+            is_waiting: False,
+            room: nil
   
   def generate_user(name, ip_addr) do
     squads = ["SkeletonSquad", "SpiderSquad"]
