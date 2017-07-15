@@ -32,8 +32,8 @@ defmodule API.Router.Skirmish do
       requires :user_name, type: String
     end
     post do
-      Rooms.Lobby.match(params.user_name)
-      json(conn, %{})
+      port = Rooms.Lobby.match(params.user_name)
+      json(conn, port)
     end
 
   end
