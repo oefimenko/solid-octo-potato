@@ -48,8 +48,8 @@ defmodule API.Router.Training do
       requires :user_name, type: String
     end
     post do
-      Rooms.Lobby.training(params.user_name)
-      json(conn, %{})
+      port = Rooms.Lobby.training(params.user_name)
+      json(conn, port)
     end
 
   end

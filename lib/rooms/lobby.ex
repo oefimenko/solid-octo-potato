@@ -21,11 +21,11 @@ defmodule Rooms.Lobby do
   end
 
   def match(user_name) do 
-    GenServer.cast(__MODULE__, {:match, user_name})
+    GenServer.call(__MODULE__, {:match, user_name})
   end
 
   def training(user_name) do 
-    GenServer.cast(__MODULE__, {:training, user_name})
+    GenServer.call(__MODULE__, {:training, user_name})
   end
 
 
@@ -33,10 +33,6 @@ defmodule Rooms.Lobby do
   
   def init(:ok) do
     {:ok, %{}}
-  end
-
-  def handle_call({:read}, _from, list) do
-    {:reply, list, list}
   end
 
   def handle_cast({:add, user_name, ip}, list) do
@@ -48,12 +44,16 @@ defmodule Rooms.Lobby do
     {:noreply, Map.delete(list, user_name)}
   end
 
-  def handle_cast({:match, user_name}, list) do
+  def handle_call({:read}, _from, list) do
+    {:reply, list, list}
+  end
+
+  def handle_call({:match, user_name}, _from, list) do
     IO.inspect({"match", user_name})
     waiting_user = Enum.find(list, nil, fn({_name, user}) -> user.is_waiting == true end)
     state = if waiting_user != nil do
       {_name, waiting} = waiting_user
-      user_0 = %{waiting | is_waiting: false, side: 0, in_game: true}
+      user_0 = %{waiting | is_waiting: false, side: 0}
       user_1 = %{Map.fetch!(list, user_name) | is_waiting: false, side: 1, in_game: true}
       port = Enum.random(22001..32001)
       Rooms.Match.start_link(user_0, user_1, port)
@@ -62,16 +62,17 @@ defmodule Rooms.Lobby do
       user = %{Map.fetch!(list, user_name) | is_waiting: true}
       %{list | user_name => user}
     end
-    {:noreply, state}
+    {:reply, %{}, state}
   end
 
-  def handle_cast({:training, user_name}, list) do
+  def handle_call({:training, user_name}, _from, list) do
     IO.inspect({"training", user_name})
     user_0 =  %{Map.fetch!(list, user_name) | is_waiting: false, side: 1, in_game: true}
     port = Enum.random(22001..32001)
-    Rooms.Match.start_link(user_0, App.User.test_user, port)
+    {:ok, pid} = Rooms.Match.start_link(user_0, App.User.test_user, port)
+    Rooms.Match.receive(pid,  <<1, 0, "Test;">>)
     state = %{list | user_name => user_0}
-    {:noreply, state}
+    {:reply, port, state}
   end
 
 end
