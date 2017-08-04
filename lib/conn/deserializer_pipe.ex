@@ -1,6 +1,6 @@
 
-defmodule Conn.Deserializer do
-    
+defmodule Conn.DeserializerPipe do
+  
   def run do
     receive do
       {from, data} -> send(from, deserialize(data))

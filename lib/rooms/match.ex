@@ -18,8 +18,15 @@ defmodule Rooms.Match do
             conn: nil,
             ready: MapSet.new
 
-  def start_link(user_0, user_1, l_port) do
-    GenServer.start_link(__MODULE__, {user_0, user_1, l_port}, [])
+  def child_spec(stash, user_0, user_1, port) do 
+    %{
+      id: __MODULE__,
+      start: {__MODULE__, :start_link, [stash, user_0, user_1, port]}
+    }
+  end
+
+  def start_link(stash, user_0, user_1, l_port) do
+    GenServer.start_link(__MODULE__, {stash, user_0, user_1, l_port}, [])
   end
 
   def receive(pid, data) do
@@ -28,9 +35,20 @@ defmodule Rooms.Match do
 
   # Genserver Callbacks
   def init({user_0, user_1, port}) do
-    serializer = spawn_link(Conn.Serializer, :run, [])
-    deserializer = spawn_link(Conn.Deserializer, :run, [])
+
     {:ok, conn} = Conn.UDP.start_link(self(), port)
+    
+
+
+
+    serializer = spawn_link(Conn.SerializerPipe, :run, [])
+    deserializer = spawn_link(Conn.DeserializerPipe, :run, [])
+
+
+
+    {:ok, _pid} = Supervisor.start_link([{Conn.SerializerPipe, [:run]}], strategy: :one_for_one)
+
+    
     squads = [
         %Game.Squad{side: 0, type: Enum.at(user_0.squads, 0), name: user_0.name <> Enum.at(user_0.squads, 0), position: %Game.Vector{x: 2000, y: 2000}},
         %Game.Squad{side: 1, type: Enum.at(user_1.squads, 0), name: user_1.name <> Enum.at(user_1.squads, 0), position: %Game.Vector{x: -2000, y: -2000}}

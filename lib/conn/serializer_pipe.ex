@@ -1,6 +1,6 @@
 
-defmodule Conn.Serializer do
-    
+defmodule Conn.SerializerPipe do
+      
   def run do
     receive do
       {from, type, data} -> send(from, serialize(type, data))

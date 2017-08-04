@@ -63,7 +63,7 @@ defmodule Rooms.Lobby do
       user = %{Map.fetch!(list, user_name) | is_waiting: true, room: port}
       {%{list | user_name => user}, port}
     end
-IO.inspect({state, port})
+    IO.inspect({state, port})
     {:reply, port, state}
   end
 
