@@ -1,11 +1,11 @@
 
 defmodule Conn.SerializerPipe do
       
-  def run do
+  def run(connection) do
     receive do
-      {from, type, data} -> send(from, serialize(type, data))
+      {type, rules, data} -> connection |> Conn.UDP.send(rules, serialize(type, data))
     end
-    run()
+    run(connection)
   end
 
   # Connection message

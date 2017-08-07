@@ -56,7 +56,7 @@ defmodule Rooms.Lobby do
       {_name, waiting} = waiting_user
       user_0 = %{waiting | is_waiting: false, in_game: true}
       user_1 = %{Map.fetch!(list, user_name) | is_waiting: false, in_game: true, room: user_0.room}
-      Rooms.Match.start_link(user_0, user_1, user_0.room)
+      Rooms.MatchSupervisor.start_link(user_0, user_1, user_0.room)
       {%{list | user_name => user_1, user_0.name => user_0}, user_0.room}
     else
       port = Enum.random(22001..32001)
@@ -71,8 +71,7 @@ defmodule Rooms.Lobby do
     IO.inspect({"training", user_name})
     user_0 =  %{Map.fetch!(list, user_name) | is_waiting: false, in_game: true}
     port = Enum.random(22001..32001)
-    {:ok, pid} = Rooms.Match.start_link(user_0, App.User.test_user, port)
-    Rooms.Match.receive(pid,  <<1, 0, "Test;">>)
+    {:ok, _pid} = Rooms.MatchSupervisor.start_link(user_0, port)
     state = %{list | user_name => user_0}
     {:reply, port, state}
   end

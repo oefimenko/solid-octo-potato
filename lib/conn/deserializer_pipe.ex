@@ -1,11 +1,11 @@
 
 defmodule Conn.DeserializerPipe do
   
-  def run do
+  def run(match) do
     receive do
-      {from, data} -> send(from, deserialize(data))
+      {data} -> match |> Rooms.Match.incoming(deserialize(data))
     end
-    run()
+    run(match)
   end
 
   def deserialize(<<1, 0, data :: binary>>) do
