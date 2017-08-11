@@ -2,6 +2,9 @@
 defmodule Game.Squad do
   @doc ~S"""
   Game Sqaud:
+  version :: int
+  checksum :: int
+  timestamp :: int
   side :: int
   name :: string
   health :: float
@@ -18,7 +21,10 @@ defmodule Game.Squad do
   defensive_skill :: string
   """
 
-  defstruct side: nil,
+  defstruct version: 0,
+            checksum: 0,
+            timestamp: 0,
+            side: nil,
             name: nil,
             type: nil,
             health: nil,

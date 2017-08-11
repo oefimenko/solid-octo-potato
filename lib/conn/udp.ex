@@ -147,9 +147,7 @@ defmodule Conn.UDP do
   # structure ->
   # << type, need_ack, time, sep(0), data >>
   defp with_headers({type, need_ack}, data) do
-    {date, hour, sec} = :erlang.timestamp
-    time = Integer.to_string(date) <> Integer.to_string(hour) <> Integer.to_string(sec) 
-           |> String.pad_trailing(16, "0")
+    time = Helpers.Time.current(:string)
     {time, <<type, need_ack>> <> time <> data}
   end
 end
