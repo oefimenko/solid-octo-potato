@@ -10,20 +10,18 @@ defmodule App.User do
   """
 
   defstruct name: "Unknown",
-            ip: nil,
-            squads: nil,
+            squads: [],
             in_game: False,
             is_waiting: False,
-            room: nil
+            room: nil,
+            hash: nil
   
-  def generate_user(name, ip_addr) do
-    squads = ["SkeletonSquad", "SpiderSquad"]
-    %__MODULE__{name: name, squads: Enum.take_random(squads, 1), ip: ip_addr}
+  def load_user(name) do
+    %__MODULE__{name: name, squads: Game.Squad.init(name)}
   end
 
   def test_user do
-    squads = ["SkeletonSquad", "SpiderSquad"]
-    %__MODULE__{name: "Test", squads: Enum.take_random(squads, 1)}
+    load_user("Test")
   end
 
 end

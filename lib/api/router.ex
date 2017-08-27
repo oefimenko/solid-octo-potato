@@ -17,8 +17,7 @@ defmodule API.Router.Login do
       requires :user_name, type: String
     end
     post do
-      ip = conn.remote_ip
-      Rooms.Lobby.login(params.user_name, ip)
+      Rooms.Lobby.login(params.user_name)
       json(conn, %{})
     end
   end
@@ -32,8 +31,8 @@ defmodule API.Router.Skirmish do
       requires :user_name, type: String
     end
     post do
-      port = Rooms.Lobby.match(params.user_name)
-      json(conn, port)
+      result = Rooms.Lobby.match(params.user_name)
+      json(conn, result)
     end
 
   end
@@ -48,8 +47,8 @@ defmodule API.Router.Training do
       requires :user_name, type: String
     end
     post do
-      port = Rooms.Lobby.training(params.user_name)
-      json(conn, port)
+      result = Rooms.Lobby.training(params.user_name)
+      json(conn, result)
     end
 
   end

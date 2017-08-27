@@ -31,6 +31,10 @@ defmodule Conn.UDP do
     {:ok, state}
   end
   
+  def terminate(_reason, state) do
+    state.stash |> Helpers.Stash.set(:connection, state)
+  end
+
   def send(pid, {:sync, :ack}, data) do
     GenServer.call(pid, {:sync, :ack, data}, 15000)
   end
@@ -43,7 +47,15 @@ defmodule Conn.UDP do
     GenServer.cast(pid, {:async, :nack, data})
   end
 
-  # ACK received
+  def send(pid, {:latency}, data) do
+    GenServer.call(pid, {:latency, data}, 60000)
+  end
+
+  def send(pid, {:sync_time}, offsets) do
+    GenServer.call(pid, {:sync_time, offsets}, 15000)
+  end
+
+  #  ACK received
   def handle_info({:udp, _sck, _ip, _port, <<
                                               1, 
                                               _a, 
@@ -106,7 +118,7 @@ defmodule Conn.UDP do
 
   # Async send with ack
   def handle_cast({:async_ack, data}, state) do
-    ack_list = Enum.map(state.ips, fn({hash, {ip, port}}) ->
+    ack_list = Enum.each(state.ips, fn({hash, {ip, port}}) ->
       {id, msg} = with_headers({0, 1}, data)
       :gen_udp.send(state.socket, ip, port, msg)
       self() |> Process.send_after({:redeliver, id}, @ack_timeout)
@@ -118,10 +130,33 @@ defmodule Conn.UDP do
 
   # Sync send with ack
   def handle_call({:sync_ack, data}, _from, state) do
-    Enum.map(state.ips, fn({_hash, {ip, port}}) ->
+    Enum.each(state.ips, fn({_hash, {ip, port}}) ->
       emit_sync(state.socket, ip, port, data)
     end)
     {:reply, nil, state}
+  end
+
+  def handle_call({:latency, data}, _from, state) do
+    result = Enum.map(state.ips, fn({hash, {ip, port}}) ->
+      avg_latency = Enum.map(0..9, fn _ ->
+        time = Helpers.Time.current(:int)
+        emit_sync(state.socket, ip, port, data)
+        Helpers.Time.delta(:micro_seconds, time, Helpers.Time.current(:int))
+      end)
+      |> Enum.sum
+      |> Kernel./(20)
+      {hash, avg_latency}
+    end 
+    |> Map.new
+    state.deserializer |> send({:latency, result})
+  end
+
+  def handle_call({:sync_time, {msg_start, offsets}}, _from, state) do
+    Enum.each(offsets, fn(hash, offset) ->
+      {ip, port} = state.ips |> Map.fetch!(hash)
+      emit_sync(state.socket, ip, port, msg_start <> Integer.to_string(offset))
+    end)
+    state.deserializer |> send({:sync_time, :ok})
   end
 
   def emit_sync(socket, ip, port, data) do

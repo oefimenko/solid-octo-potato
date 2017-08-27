@@ -19,7 +19,8 @@ defmodule Rooms.Match do
             ready: MapSet.new,
             rules: %{
               conn: {:async, :ack},
-              ping: {:async, :nack},
+              latency: {:latency}, # special rules
+              sync_time: {:sync_time}, # special rules
               init: {:sync, :ack},
               squad_state: {:async, :nack},
               new_path: {:async, :ack},
@@ -49,7 +50,7 @@ defmodule Rooms.Match do
   # Genserver Callbacks
   def init({stash, user_0, user_1, port}) do
     deserializer = spawn_link(Conn.DeserializerPipe, :run, [self()])
-    {:ok, conn} = Conn.UDP.start_link(deserializer, port, stash)
+    {:ok, conn} = Conn.UDP.start_link(deserializer, port, stash, user_0.hash, user_1.hash)
     serializer = spawn_link(Conn.SerializerPipe, :run, [conn])
     {:ok, simulation} = Game.Simulation.start_link(self(), user_0, user_1, stash)
 
@@ -77,19 +78,29 @@ defmodule Rooms.Match do
   defp process_incoming({:conn, user_name}, state) do
     new_state = %__MODULE__{state | ready: MapSet.put(state.ready, user_name)}
     if MapSet.size(new_state.ready) >= 2 do
-      body = {state.user_0.name, state.user_1.name, state.squads}
-      state.serializer|> send({:init, state.rules[:init], body})
+      state.serializer |> send({:latency, state.rules.latency, body})
     end
     new_state
   end
 
+  defp process_incoming({:latency, result}, state) do
+    {_hash, offset} = result |> Enum.max_by(fn({k, v}) -> v end)
+    state.simulation |> Game.Simulation.set_time_offset(offset)
+    state.serializer |> send({:sync_time, state.rules.sync_time, result})
+  end
+
+  defp process_incoming({:sync_time, _}, state) do
+    body = {state.user_0.name, state.user_1.name, state.squads}
+    state.serializer |> send({:init, state.rules.init, body})
+  end
+
   defp process_incoming(data, state) do
-    state.simulation |> Game.Simulation.handle(data)
+    state.simulation |> Game.Simulation.process(data)
     state
   end
 
   defp process_outcoming({type, data}, state) do
-    state.serializer |> send({type, state.rules[type], data})
+    state.serializer |> send({type, state.rules.type, data})
     state
   end
 

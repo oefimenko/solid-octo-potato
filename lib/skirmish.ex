@@ -6,6 +6,7 @@ defmodule Skirmish do
     import Supervisor.Spec, warn: false
 
     children = [
+      worker(App.SessionManager, []),
       worker(Rooms.Lobby, [])
     ]
 

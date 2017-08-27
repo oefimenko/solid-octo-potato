@@ -1,5 +1,8 @@
 
 defmodule Game.Squad do
+  
+  @supported_squads [:skeletons, :spiders]
+  
   @doc ~S"""
   Game Sqaud:
   version :: int
@@ -39,6 +42,18 @@ defmodule Game.Squad do
             formation: nil,
             offensive_skill: nil,
             defensive_skill: nil
+
+  def init(:skeleton, name) do
+    %__MODULE__{name: name <> "Skeletons"}
+  end
+  
+  def init(:spiders, name) do
+    %__MODULE__{name: name <> "Spiders"}
+  end
+
+  def init(name) do
+    init(Enum.random(@supported_squads), name)
+  end
 
   def serialize(squad) do
     "#{squad.type}:" <>                                 #0

@@ -9,13 +9,18 @@ defmodule Conn.SerializerPipe do
   end
 
   # Connection message
-  def serialize(:conn) do
+  def serialize(:conn, _) do
     "10" <> ";"
   end
 
-  # Ping message
-  def serialize(:ping) do
+  # latency message
+  def serialize(:latency, _) do
     "11" <> ";"
+  end
+
+  # Sync time message
+  def serialize(:sync_time, offsets) do
+    {"12" <> ";", offsets}
   end
 
   # Init message
@@ -24,7 +29,7 @@ defmodule Conn.SerializerPipe do
       |> Enum.map(fn(e) -> Game.Squad.serialize(e) end) 
       |> Enum.join(";")
       
-    "12;#{id_0};0;#{id_1};1;#{s_squads}"
+    "13;#{id_0};0;#{id_1};1;#{s_squads}"
   end
 
   # Squad State message

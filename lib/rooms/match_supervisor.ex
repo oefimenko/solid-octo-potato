@@ -7,7 +7,7 @@ defmodule Rooms.MatchSupervisor do
     result = {:ok, sup } = Supervisor.start_link(__MODULE__, [], [])
     {:ok, stash} = Supervisor.start_child(sup, Helpers.Stash.child_spec)
     {:ok, match} = Supervisor.start_child(sup, Rooms.Match.child_spec(stash, user_0, user_1, l_port))
-    Rooms.Match.process(match,  <<1, 0, "Test;">>)
+    Rooms.Match.incoming(match,  {:conn, user_1.name})
     result
   end
 

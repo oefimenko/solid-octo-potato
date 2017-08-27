@@ -54,4 +54,12 @@ defmodule Conn.DeserializerPipe do
     }}
   end
 
+  def deserialize({:latency, result}) do
+    {:latency, result}
+  end
+
+  def deserialize({:sync_time, result}) do
+    {:sync_time, result}
+  end
+
 end

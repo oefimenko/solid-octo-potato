@@ -17,12 +17,15 @@ defmodule Game.SquadSimulation do
     Enum.at(simulation.state, -1)
   end
 
-  def state_on(%__MODULE__{:current => %Game.Squad{:path => nil} = squad}, time) do
+  def state_on(%__MODULE__{} = simulation, time) do
+    state_on(simulation.current, time)
+  end
+
+  def state_on(%Game.Squad{:path => nil} = squad, time) do
     %Game.Squad{squad | timestamp: time}
   end
 
-  def state_on(simulation, time) do
-    squad = simulation.current
+  def state_on(%Game.Squad{} = squad, time) do
     distance = Helpers.Time.delta(:seconds, squad.timestamp, time) * squad.speed.x
     {path, position} = Game.Path.move_for(squad.path, squad.position, distance)
     %Game.Squad{squad | timestamp: time, path: path, position: position}
@@ -37,10 +40,21 @@ defmodule Game.SquadSimulation do
 
   def update(simulation, state) do
     index = Enum.find_index(simulation, fn s -> state.timestamp > s.timestamp end)
-    states = List.insert_at(simulation.states, index, state)
-             |> Enum.map(fn x -> x end)
-    %__MODULE__{simulation | states: states}
+    raw_states = List.insert_at(simulation.states, index, state)
+    states = (0..Enum.count(raw_states) - 1) 
+             |> Enum.map(fn x ->
+               case x do
+                 x when x <= index -> Enum.at(raw_states, x)
+                 x -> adjust_state(Enum.at(raw_states, x), Enum.at(raw_states, x - 1))
+               end
+             end)
+
+    %__MODULE__{simulation | states: states, current: Enum.at(states, -1)}
   end
 
+  defp adjust_state(current, previous) do
+    calculated_state = state_on(previous, current.timestamp)
+    %Game.Squad{current | path: previous.path, position: previous.position}
+  end
   
 end
