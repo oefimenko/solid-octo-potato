@@ -75,7 +75,7 @@ defmodule Conn.UDP do
                                           >>}, state) do
     msg = <<1, 0>> <> stamp
     :gen_udp.send(state.socket, ip, port, msg)
-    state.deserializer |> send(data)
+    state.deserializer |> send({data, hash})
     {:noreply, %{state | ips: %{state.ips | hash => {ip, port}} }}
   end
 
@@ -87,7 +87,7 @@ defmodule Conn.UDP do
                                             hash :: bitstring-size(128),
                                             data :: binary
                                           >>}, state) do
-    state.deserializer |> send(data)
+    state.deserializer |> send({data, hash})
     {:noreply, %{state | ips: %{state.ips | hash => {ip, port}} }}
   end
 
@@ -146,9 +146,9 @@ defmodule Conn.UDP do
       |> Enum.sum
       |> Kernel./(20)
       {hash, avg_latency}
-    end 
+    end)
     |> Map.new
-    state.deserializer |> send({:latency, result})
+    state.deserializer |> send({{:latency, result}})
   end
 
   def handle_call({:sync_time, {msg_start, offsets}}, _from, state) do
@@ -156,7 +156,7 @@ defmodule Conn.UDP do
       {ip, port} = state.ips |> Map.fetch!(hash)
       emit_sync(state.socket, ip, port, msg_start <> Integer.to_string(offset))
     end)
-    state.deserializer |> send({:sync_time, :ok})
+    state.deserializer |> send({{:sync_time, :ok}})
   end
 
   def emit_sync(socket, ip, port, data) do

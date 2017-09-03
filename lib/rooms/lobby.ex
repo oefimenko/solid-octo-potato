@@ -32,6 +32,9 @@ defmodule Rooms.Lobby do
     GenServer.call(__MODULE__, {:training, user_name})
   end
 
+  def leave_match(user_name) do
+    GenServer.call(__MODULE__, {:leave_match, user_name})
+  end
 
   # GenServer callbacks
 
@@ -82,6 +85,13 @@ defmodule Rooms.Lobby do
     {:ok, _pid} = Rooms.MatchSupervisor.start_link(user_0, port)
     state = %{state | user_name => user_0}
     {:reply, %{port: port, hash: hsh_1}, state}
+  end
+
+  #TODO: Rethink session managers
+  def handle_call({:leave_match, user_name}, _from, state) do
+    user = Map.fetch(state, user_name)
+    # App.SessionManager.close_session
+    # RETHINK. Probably session should keep reference to both users and session intelf
   end
 
 end

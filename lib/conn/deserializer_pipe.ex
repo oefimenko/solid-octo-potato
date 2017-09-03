@@ -4,6 +4,7 @@ defmodule Conn.DeserializerPipe do
   def run(match) do
     receive do
       {data} -> match |> Rooms.Match.incoming(deserialize(data))
+      {data, hash} -> match |> Rooms.Match.incoming({deserialize(data), hash})
     end
     run(match)
   end
@@ -13,15 +14,22 @@ defmodule Conn.DeserializerPipe do
     {:conn, Enum.at(raw, 0, nil)}
   end
 
-  def deserialize(<<1, 1, _data :: binary>>) do
-    {:ping}
+  def deserialize({:latency, result}) do
+    {:latency, result}
   end
 
-  def deserialize(<<1, 2, _data :: binary>>) do
-    IO.puts "Initail message captured"
+  def deserialize({:sync_time, result}) do
+    {:sync_time, result}
+  end
+
+  def deserialize(<<1, 3, _data :: binary>>) do
     {:init}
   end
-  
+
+  def deserialize(<<1, 4, _data :: binary>>) do
+    {:match_start}
+  end
+
   def deserialize(<<2, 1, ";", data :: binary>>) do
     raw = String.split(data, ";", trim: true)
     {:squad_state, %Game.Squad{
@@ -52,14 +60,6 @@ defmodule Conn.DeserializerPipe do
         name: Enum.at(raw, 1, nil),
         offensive_skill: Enum.at(raw, 1, nil),
     }}
-  end
-
-  def deserialize({:latency, result}) do
-    {:latency, result}
-  end
-
-  def deserialize({:sync_time, result}) do
-    {:sync_time, result}
   end
 
 end

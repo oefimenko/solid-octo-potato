@@ -24,12 +24,12 @@ defmodule Game.Simulation do
     state = %__MODULE__{
         stash: stash,
         match: match,
-        squads: Enum.map(squads, fn s -> Game.SquadSimulation.start(s) end)
+        squads: Map.new(squads, fn s -> {s.name, Game.SquadSimulation.new(s)} end)
     }
     {:ok, state}
   end
 
-  def init({match, user_0, user_1, stash, saved_state}) do
+  def init({match, _user_0, _user_1, stash, saved_state}) do
     state = %__MODULE__{
         stash: stash,
         match: match,
@@ -42,17 +42,64 @@ defmodule Game.Simulation do
     state.stash |> Helpers.Stash.set(:simulation, state)
   end
 
-  def process(data) do
-    #Something happens
+  def process(pid, data) do
+    GenServer.cast(pid, data)
   end
 
   def set_time_offset(pid, offset) do
     GenServer.call(pid, {:set_offset, offset})
   end
 
-
   #private
-  defp handle_call({:set_offset, offset}, _from, state) do
+  def handle_call({:set_offset, offset}, _from, state) do
     {:reply, nil, %__MODULE__{state | offset: offset}}
-  end 
+  end
+
+  def handle_cast({:init}, state) do
+    state.match |> Rooms.Match.outcoming(
+      {:init, Enum.map(state.squads.values, fn s -> s.current end)}
+    )
+    {:noreply, state}
+  end
+
+  def handle_cast({:squad_state, squad}, state) do
+    new_state = simulate_process(state, squad, :squad_state, [])
+    {:noreply, new_state}
+  end
+
+  def handle_cast({:new_path, squad}, state) do
+    new_state = simulate_process(state, squad, :new_path, [:path])
+    {:noreply, new_state}
+  end
+
+  def handle_cast({:new_formation, squad}, state) do
+    new_state = simulate_process(state, squad, :new_formation, [:formation, :speed])
+    {:noreply, new_state}
+  end
+
+  def handle_cast({:skill_used, squad}, state) do
+    new_state = simulate_process(state, squad, :skill_used, [])
+    {:noreply, new_state}
+  end
+
+  # Simulation proccess and command propagation
+  defp simulate_process(state, squad, type, fields) do
+    predicted = state.squads[squad.name]
+    |> Game.SquadSimulation.predicted_state_of(squad)
+    
+    update = fields 
+    |> Enum.reduce(%{}, fn x, acc -> put_in(acc[x], Map.fetch!(predicted, x)) end)
+    
+    real = %Game.Squad{
+      predicted | 
+      version: predicted.version + squad.checksum, 
+      checksum: squad.checksum
+    }
+    |> Map.merge(update)
+
+    simulation = state.squads[squad.name] |> Game.SquadSimulation.update(real)
+    state.match |> Rooms.Match.outcoming({type, real})
+    %__MODULE__{state | squads: %{state.squads | squad.name => simulation}}
+  end
+
 end

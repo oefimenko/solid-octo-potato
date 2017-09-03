@@ -1,24 +1,22 @@
 
 defmodule Game.SquadSimulation do
 
+  @buffer 50
+
   @doc ~S"""
   Game SquadSimulation:
   states :: Keyword [{timestamp: state} ]
-  current :: Game.Squad
+  last :: Game.Squad
   """
   defstruct states: nil,
-            current: nil
+            last: nil
 
-  def start(squad) do
-    %__MODULE__{states: [{squad.version, squad}], current: squad}
-  end
-
-  def current(simulation) do
-    Enum.at(simulation.state, -1)
+  def new(squad) do
+    %__MODULE__{states: [squad], last: squad}
   end
 
   def state_on(%__MODULE__{} = simulation, time) do
-    state_on(simulation.current, time)
+    state_on(simulation.last, time)
   end
 
   def state_on(%Game.Squad{:path => nil} = squad, time) do
@@ -31,30 +29,39 @@ defmodule Game.SquadSimulation do
     %Game.Squad{squad | timestamp: time, path: path, position: position}
   end
 
-  def update(
-    %__MODULE__{:current => %Game.Squad{:timestamp => sim_stamp}} = sim,
-    %Game.Squad{:timestamp => new_tamp} = state
-  ) when sim_stamp <= new_tamp do
-    %__MODULE__{sim.states ++ [state] |> Enum.take(-50) | current: state}
+  def predicted_state_of(simulation, squad) do
+    previous = Enum.find(simulation.states, fn x -> x.checksum < squad.checksum end)
+    state_on(previous, squad.timestamp)
   end
+
+  def update(
+    %__MODULE__{last: %Game.Squad{checksum: sim_stamp}} = sim,
+    %Game.Squad{checksum: new_stamp} = state
+  ) when sim_stamp <= new_stamp do
+    %__MODULE__{sim | states: [state | sim.states] |> Enum.take(-@buffer), last: state}
+  end 
 
   def update(simulation, state) do
-    index = Enum.find_index(simulation, fn s -> state.timestamp > s.timestamp end)
-    raw_states = List.insert_at(simulation.states, index, state)
-    states = (0..Enum.count(raw_states) - 1) 
-             |> Enum.map(fn x ->
-               case x do
-                 x when x <= index -> Enum.at(raw_states, x)
-                 x -> adjust_state(Enum.at(raw_states, x), Enum.at(raw_states, x - 1))
-               end
-             end)
+    position = Enum.find_index(simulation.states, fn s -> state.checksum > s.checksum end)
+    index = if (position), do: position, else: length(simulation.states)
+    unadjusted_states = List.insert_at(simulation.states, index, state)
+    [_ | previous_states] = unadjusted_states ++ [nil]
+ 
+    states = Stream.with_index(unadjusted_states)
+              |> Stream.zip(previous_states)
+              |> Enum.map(fn {{curr, idx}, prev} ->
+                  cond do
+                    idx >= index -> curr
+                    idx < index -> adjust_state(curr, prev)
+                  end
+                end)
 
-    %__MODULE__{simulation | states: states, current: Enum.at(states, -1)}
+    %__MODULE__{simulation | states: states |> Enum.take(-@buffer), last: Enum.at(states, 0)}
   end
 
-  defp adjust_state(current, previous) do
-    calculated_state = state_on(previous, current.timestamp)
-    %Game.Squad{current | path: previous.path, position: previous.position}
+  defp adjust_state(last, previous) do
+    calculated_state = state_on(previous, last.timestamp)
+    %Game.Squad{last | path: calculated_state.path, position: calculated_state.position}
   end
   
 end

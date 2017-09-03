@@ -32,6 +32,11 @@ defmodule Conn.SerializerPipe do
     "13;#{id_0};0;#{id_1};1;#{s_squads}"
   end
 
+  # Match start
+  def serialize(:match_start, start_time) do
+    "14;#{start_time}"
+  end
+
   # Squad State message
   def serialize(:squad_state, squad) do
     "21" <> ";" <> Game.Squad.serialize(squad)
