@@ -8,7 +8,7 @@ defmodule Game.Squad do
   version :: int
   checksum :: int
   timestamp :: int
-  side :: int
+  owner :: string
   name :: string
   health :: float
   damage :: float
@@ -27,7 +27,7 @@ defmodule Game.Squad do
   defstruct version: 0,
             checksum: 0,
             timestamp: 0,
-            side: nil,
+            owner: "",
             name: nil,
             type: nil,
             health: nil,
@@ -43,12 +43,12 @@ defmodule Game.Squad do
             offensive_skill: nil,
             defensive_skill: nil
 
-  def init(:skeleton, name) do
-    %__MODULE__{name: name <> "Skeletons"}
+  def init(:skeletons, name) do
+    %__MODULE__{name: name <> "Skeletons", owner: name}
   end
   
   def init(:spiders, name) do
-    %__MODULE__{name: name <> "Spiders"}
+    %__MODULE__{name: name <> "Spiders", owner: name}
   end
 
   def init(name) do
@@ -57,7 +57,7 @@ defmodule Game.Squad do
 
   def serialize(squad) do
     "#{squad.type}:" <>                                 #0
-    "#{squad.side}:" <>                                 #1
+    "#{squad.owner}:" <>                                #1
     "#{squad.name}:" <>                                 #2
     "#{squad.health}:" <>                               #3
     "#{squad.damage}:" <>                               #4

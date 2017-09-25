@@ -10,18 +10,25 @@ defmodule Conn.UDP do
     GenServer.start_link(__MODULE__, params, [])
   end
 
-  # Init if no previous state was exist
-  def init({deserializer, port, stash, hash_1, hash_2, nil}) do
+  def init_state(deserializer, port, stash, ips) do
     {:ok, socket} = :gen_udp.open(port, [:binary])
-
-    state = %{
-      ips: %{hash_1 => nil, hash_2 => nil},
+    %{
+      ips: ips,
       deserializer: deserializer,
       stash: stash,
       socket: socket,
       ack_list: %{}
     }
-    {:ok, state}
+  end
+
+  # Init if no previous state was exist for 1 player
+  def init({deserializer, port, stash, hash_1, nil, nil}) do
+    {:ok, init_state(deserializer, port, stash, %{hash_1 => nil})}
+  end
+
+  # Init if no previous state was exist for 2 players
+  def init({deserializer, port, stash, hash_1, hash_2, nil}) do
+    {:ok, init_state(deserializer, port, stash, %{hash_1 => nil, hash_2 => nil})}
   end
 
   # Init if previous state was exist
@@ -59,7 +66,7 @@ defmodule Conn.UDP do
   def handle_info({:udp, _sck, _ip, _port, <<
                                               1, 
                                               _a, 
-                                              stamp :: bitstring-size(128), 
+                                              stamp :: binary-size(16), 
                                               _ :: binary
                                             >>}, state) do
     {:noreply, %{state | ack_list: Map.delete(state.ack_list, stamp)}}
@@ -69,26 +76,28 @@ defmodule Conn.UDP do
   def handle_info({:udp, _sck, ip, port, <<
                                             0,
                                             1,
-                                            stamp :: bitstring-size(128),
+                                            stamp :: binary-size(16),
                                             hash :: bitstring-size(128),
                                             data :: binary
                                           >>}, state) do
     msg = <<1, 0>> <> stamp
     :gen_udp.send(state.socket, ip, port, msg)
     state.deserializer |> send({data, hash})
-    {:noreply, %{state | ips: %{state.ips | hash => {ip, port}} }}
+    ips = Map.put(state.ips, hash, {ip, port})
+    {:noreply, %{state | ips: ips}}
   end
 
   # Request with no ack needed received
   def handle_info({:udp, _sck, ip, port, <<
                                             0,
                                             0,
-                                            _stamp :: bitstring-size(128),
+                                            _stamp :: binary-size(16),
                                             hash :: bitstring-size(128),
                                             data :: binary
                                           >>}, state) do
     state.deserializer |> send({data, hash})
-    {:noreply, %{state | ips: %{state.ips | hash => {ip, port}} }}
+    ips = Map.put(state.ips, hash, {ip, port})
+    {:noreply, %{state | ips: ips}}
   end
 
   # Task for message redeliver
@@ -108,18 +117,18 @@ defmodule Conn.UDP do
   end
   
   # Async send without ack
-  def handle_cast({:async_no_ack, data}, state) do
-    Enum.each(state.ips, fn({_hash, {ip, port}}) -> 
-      {_id, msg} = with_headers({0, 1}, data)
+  def handle_cast({:async, no_ack, data}, state) do
+    Enum.each(state.ips, fn({hash, {ip, port}}) -> 
+      {_id, msg} = with_headers({0, 1}, hash, data)
       :gen_udp.send(state.socket, ip, port, msg)
     end)
     {:noreply, state}
   end
 
   # Async send with ack
-  def handle_cast({:async_ack, data}, state) do
+  def handle_cast({:async, :ack, data}, state) do
     ack_list = Enum.each(state.ips, fn({hash, {ip, port}}) ->
-      {id, msg} = with_headers({0, 1}, data)
+      {id, msg} = with_headers({0, 1}, hash, data)
       :gen_udp.send(state.socket, ip, port, msg)
       self() |> Process.send_after({:redeliver, id}, @ack_timeout)
       {id, {hash, msg}}
@@ -129,42 +138,46 @@ defmodule Conn.UDP do
   end
 
   # Sync send with ack
-  def handle_call({:sync_ack, data}, _from, state) do
-    Enum.each(state.ips, fn({_hash, {ip, port}}) ->
-      emit_sync(state.socket, ip, port, data)
+  def handle_call({:sync, :ack, data}, _from, state) do
+    Enum.each(state.ips, fn({hash, {ip, port}}) ->
+      emit_sync(state.socket, ip, port, hash, data)
     end)
-    {:reply, nil, state}
+    {:reply, {:ok}, state}
   end
 
   def handle_call({:latency, data}, _from, state) do
     result = Enum.map(state.ips, fn({hash, {ip, port}}) ->
       avg_latency = Enum.map(0..9, fn _ ->
         time = Helpers.Time.current(:int)
-        emit_sync(state.socket, ip, port, data)
+        emit_sync(state.socket, ip, port, hash, data)
         Helpers.Time.delta(:micro_seconds, time, Helpers.Time.current(:int))
       end)
       |> Enum.sum
       |> Kernel./(20)
+      |> Float.ceil(0)
+      |> round
       {hash, avg_latency}
     end)
     |> Map.new
     state.deserializer |> send({{:latency, result}})
+    {:reply, {:ok}, state}
   end
 
-  def handle_call({:sync_time, {msg_start, offsets}}, _from, state) do
-    Enum.each(offsets, fn(hash, offset) ->
+  def handle_call({:sync_time, {msg_id, offsets}}, _from, state) do
+    Enum.each(offsets, fn({hash, offset}) ->
       {ip, port} = state.ips |> Map.fetch!(hash)
-      emit_sync(state.socket, ip, port, msg_start <> Integer.to_string(offset))
+      emit_sync(state.socket, ip, port, hash, msg_id <> Integer.to_string(offset))
     end)
     state.deserializer |> send({{:sync_time, :ok}})
+    {:reply, {:ok}, state}
   end
 
-  def emit_sync(socket, ip, port, data) do
-    {id, msg} = with_headers({0, 1}, data)
+  def emit_sync(socket, ip, port, hash, data) do
+    {id, msg} = with_headers({0, 1}, hash, data)
     pub = fn
       ({:ok, data}) -> data
       (fun) -> fun.(receive do
-        ({:udp, _port, ^ip, data}) -> {:ok, data}
+        ({:udp, _s, _ip, _p, <<1, 0, ^id::binary>> = data}) -> {:ok, data}
         ({:reemit, ^id}) -> :gen_udp.send(socket, ip, port, msg);
                             Process.send_after(self(), {:reemit, id}, 2000);
                             fun
@@ -181,8 +194,8 @@ defmodule Conn.UDP do
   # time     :: 16
   # structure ->
   # << type, need_ack, time, sep(0), data >>
-  defp with_headers({type, need_ack}, data) do
+  defp with_headers({type, need_ack}, hash, data) do
     time = Helpers.Time.current(:string)
-    {time, <<type, need_ack>> <> time <> data}
+    {time, <<type, need_ack>> <> time <> hash <> data}
   end
 end

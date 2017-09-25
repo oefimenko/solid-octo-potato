@@ -10,51 +10,51 @@ defmodule Conn.SerializerPipe do
 
   # Connection message
   def serialize(:conn, _) do
-    "10" <> ";"
+    <<1, 0>>
   end
 
   # latency message
   def serialize(:latency, _) do
-    "11" <> ";"
+    <<1, 1>>
   end
 
   # Sync time message
   def serialize(:sync_time, offsets) do
-    {"12" <> ";", offsets}
+    {<<1, 2>>, offsets}
   end
 
   # Init message
-  def serialize(:init, {id_0, id_1, squads}) do
+  def serialize(:init, squads) do
     s_squads = squads 
       |> Enum.map(fn(e) -> Game.Squad.serialize(e) end) 
       |> Enum.join(";")
       
-    "13;#{id_0};0;#{id_1};1;#{s_squads}"
+    <<1, 3>> <> "#{s_squads}"
   end
 
   # Match start
   def serialize(:match_start, start_time) do
-    "14;#{start_time}"
+    <<1, 4>> <> "#{start_time}"
   end
 
   # Squad State message
   def serialize(:squad_state, squad) do
-    "21" <> ";" <> Game.Squad.serialize(squad)
+    <<2, 1>> <> Game.Squad.serialize(squad)
   end
 
   # Path provided
   def serialize(:new_path, squad) do
-    "22" <> ";" <> Game.Squad.serialize(squad)
+    <<2, 2>> <> Game.Squad.serialize(squad)
   end  
 
   # Formation message
   def serialize(:new_formation, squad) do
-    "23" <> ";" <> Game.Squad.serialize(squad)
+    <<2, 3>> <> Game.Squad.serialize(squad)
   end
 
   # Skill message
   def serialize(:skill_used, squad) do
-    "24" <> ";" <> Game.Squad.serialize(squad)
+    <<2, 4>> <> Game.Squad.serialize(squad)
   end
 
 end

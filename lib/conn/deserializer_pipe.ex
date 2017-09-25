@@ -33,7 +33,7 @@ defmodule Conn.DeserializerPipe do
   def deserialize(<<2, 1, ";", data :: binary>>) do
     raw = String.split(data, ";", trim: true)
     {:squad_state, %Game.Squad{
-        side: Enum.at(raw, 0, nil),
+        owner: Enum.at(raw, 0, nil),
         name: Enum.at(raw, 1, nil)
     }}
   end

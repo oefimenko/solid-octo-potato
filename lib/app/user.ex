@@ -17,7 +17,7 @@ defmodule App.User do
             hash: nil
   
   def load_user(name) do
-    %__MODULE__{name: name, squads: Game.Squad.init(name)}
+    %__MODULE__{name: name, squads: [Game.Squad.init(name)]}
   end
 
   def test_user do

@@ -33,7 +33,8 @@ defmodule Rooms.Match do
               new_formation: {:async, :ack},
               skill_used: {:async, :ack},
               close_attack: {:async, :ack},
-              ranged_attack: {:async, :ack}
+              ranged_attack: {:async, :ack},
+              match_finish: {:async, :ack}
             }
 
   def child_spec(stash, user_0, user_1, port) do 
@@ -48,7 +49,7 @@ defmodule Rooms.Match do
   end
 
   def incoming(pid, data) do
-    GenServer.cast(pid, {:incomig, data})
+    GenServer.cast(pid, {:incoming, data})
   end
 
   def outcoming(pid, data) do
@@ -83,7 +84,7 @@ defmodule Rooms.Match do
 
   # Private
 
-  defp process_incoming({:conn, user_name}, state) do
+  defp process_incoming({{:conn, user_name}, _h}, state) do
     new_state = %__MODULE__{state | ready: MapSet.put(state.ready, user_name)}
     if MapSet.size(new_state.ready) >= 2 do
       state.serializer |> send({:latency, state.rules.latency, {}})
@@ -119,6 +120,7 @@ defmodule Rooms.Match do
     state.serializer |> send({:init, state.rules.init, data})
     start_time = Helpers.Time.future(:string, 5, :seconds)
     state.serializer |> send({:match_start, state.rules.match_start, start_time})
+    # state.simulation |> Game.Simulation.start_simulation
     state
   end
 

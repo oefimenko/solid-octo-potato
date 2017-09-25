@@ -2,6 +2,8 @@
 defmodule Game.Simulation do
   use GenServer
 
+  @frequency 5
+
   @doc ~S"""
   Game.Simulation:
   stash :: PID
@@ -20,6 +22,13 @@ defmodule Game.Simulation do
   end
 
   def init({match, user_0, user_1, stash, nil}) do
+    # # TODO:
+
+    # add initial position
+    # 1 team x: -8 -3 | y: -4 x
+    # 2 team x: 8 3 | y: -4 x
+
+    # #
     squads = user_0.squads ++ user_1.squads
     state = %__MODULE__{
         stash: stash,
@@ -50,14 +59,33 @@ defmodule Game.Simulation do
     GenServer.call(pid, {:set_offset, offset})
   end
 
+  def start_simulation(pid) do
+    Process.send_after(pid, {:simulate}, 5000)
+  end
+
   #private
+  def handle_info({:simulate}, state) do
+    postpone_time = 1000 / (length(state.squads) * @frequency)
+    Enum.reduce(state.squads, 0, fn s, acc -> 
+      Process.send_after(self(), {:sync_emit, s}, acc)
+      acc + postpone_time
+    end)
+    Process.send_after(self(), {:simulate}, 1000 / @frequency)
+    {:noreply, state}
+  end
+
+  def handle_info({:sync_emit, squad}, state) do
+    GenServer.cast(self(), {:squad_state, squad})
+    {:noreply, state}
+  end
+
   def handle_call({:set_offset, offset}, _from, state) do
-    {:reply, nil, %__MODULE__{state | offset: offset}}
+    {:reply, {:ok}, %__MODULE__{state | offset: offset}}
   end
 
   def handle_cast({:init}, state) do
     state.match |> Rooms.Match.outcoming(
-      {:init, Enum.map(state.squads.values, fn s -> s.current end)}
+      {:init, Enum.map(Map.values(state.squads), fn s -> s.last end)}
     )
     {:noreply, state}
   end

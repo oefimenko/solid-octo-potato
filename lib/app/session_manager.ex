@@ -5,7 +5,7 @@ defmodule App.SessionManager do
   @lower_port 22001
   @upper_port 32001
 
-  @hsh_length 8
+  @hsh_length 16
   @lower Enum.map(?a..?z, &to_string([&1]))
   @upper Enum.map(?A..?Z, &to_string([&1]))
   @digit Enum.map(?0..?9, &to_string([&1]))
@@ -35,18 +35,18 @@ defmodule App.SessionManager do
 
   # GenServer callbacks
 
-  def handle_call({:session}, state) do
-    result = {next, hsh1, hsh2} = {state.next, generate_hash, generate_hash}
-    details = %{state.details | next => {hsh1, hsh2}}
+  def handle_call({:session}, _from, state) do
+    result = {next, hsh1, hsh2} = {state.next, generate_hash(), generate_hash()}
+    details = Map.put(state.details, next, {hsh1, hsh2})
     new_state = %{state | next: calculate_next(details), details: details } 
     {:reply, result, new_state}
   end
 
-  def handle_call({:details, port}, state) do
+  def handle_call({:details, _from, port}, state) do
     {:reply, Map.fetch(state.details, port), state}
   end
 
-  def handle_call({:close, port}, state) do
+  def handle_call({:close, port}, _from, state) do
     {:reply, true, %{state | details: Map.delete(state.details, port)}}
   end
 
