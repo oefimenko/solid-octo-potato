@@ -22,14 +22,10 @@ defmodule Game.Simulation do
   end
 
   def init({match, user_0, user_1, stash, nil}) do
-    # # TODO:
-
-    # add initial position
-    # 1 team x: -8 -3 | y: -4 x
-    # 2 team x: 8 3 | y: -4 x
-
-    # #
-    squads = user_0.squads ++ user_1.squads
+    position = fn x1, x2, y1, y2 -> %Game.Vector{x: Enum.random(x1..x2) * 1000, y: Enum.random(y1..y2) * 1000} end
+    user0_squads = Enum.map(user_0.squads, fn s -> %Game.Squad{s | position: position.(-8, -3, -4, 4) } end)
+    user1_squads = Enum.map(user_1.squads, fn s -> %Game.Squad{s | position: position.(8, 3, -4, 4) } end)
+    squads = user0_squads ++ user1_squads
     state = %__MODULE__{
         stash: stash,
         match: match,
@@ -65,12 +61,12 @@ defmodule Game.Simulation do
 
   #private
   def handle_info({:simulate}, state) do
-    postpone_time = 1000 / (length(state.squads) * @frequency)
-    Enum.reduce(state.squads, 0, fn s, acc -> 
-      Process.send_after(self(), {:sync_emit, s}, acc)
+    postpone_time = round(1000 / (map_size(state.squads) * @frequency))
+    Enum.reduce(state.squads, 0, fn {_, s}, acc -> 
+      Process.send_after(self(), {:sync_emit, s.last}, acc)
       acc + postpone_time
     end)
-    Process.send_after(self(), {:simulate}, 1000 / @frequency)
+    Process.send_after(self(), {:simulate}, round(1000 / @frequency))
     {:noreply, state}
   end
 

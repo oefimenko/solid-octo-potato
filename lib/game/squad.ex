@@ -44,11 +44,11 @@ defmodule Game.Squad do
             defensive_skill: nil
 
   def init(:skeletons, name) do
-    %__MODULE__{name: name <> "Skeletons", owner: name}
+    %__MODULE__{type: "SkeletonSquad", name: name <> "Skeletons", owner: name}
   end
   
   def init(:spiders, name) do
-    %__MODULE__{name: name <> "Spiders", owner: name}
+    %__MODULE__{type: "SpiderSquad", name: name <> "Spiders", owner: name}
   end
 
   def init(name) do

@@ -24,7 +24,7 @@ defmodule Rooms.Match do
               init: {:sync, :ack},
               match_start: {:async, :ack},
               surrender: {:sync, :ack},
-              squad_state: {:async, :nack},
+              squad_state: {:async, :no_ack},
               new_path: {:async, :ack},
               follow_path: {:async, :ack},
               path_purge: {:async, :ack},
@@ -120,12 +120,12 @@ defmodule Rooms.Match do
     state.serializer |> send({:init, state.rules.init, data})
     start_time = Helpers.Time.future(:string, 5, :seconds)
     state.serializer |> send({:match_start, state.rules.match_start, start_time})
-    # state.simulation |> Game.Simulation.start_simulation
+    state.simulation |> Game.Simulation.start_simulation
     state
   end
 
   defp process_outcoming({type, data}, state) do
-    state.serializer |> send({type, Map.fetch(state.rules, type), data})
+    state.serializer |> send({type, Map.fetch!(state.rules, type), data})
     state
   end
 

@@ -30,7 +30,7 @@ defmodule Game.SquadSimulation do
   end
 
   def predicted_state_of(simulation, squad) do
-    previous = Enum.find(simulation.states, fn x -> x.checksum < squad.checksum end)
+    previous = Enum.find(simulation.states, fn x -> x.checksum <= squad.checksum end)
     state_on(previous, squad.timestamp)
   end
 

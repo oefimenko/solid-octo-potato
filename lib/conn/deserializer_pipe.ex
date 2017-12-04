@@ -32,33 +32,41 @@ defmodule Conn.DeserializerPipe do
 
   def deserialize(<<2, 1, ";", data :: binary>>) do
     raw = String.split(data, ";", trim: true)
+    {version, _} = Integer.parse(Enum.at(raw, 2, nil))
     {:squad_state, %Game.Squad{
         owner: Enum.at(raw, 0, nil),
-        name: Enum.at(raw, 1, nil)
+        name: Enum.at(raw, 1, nil),
+        version: Enum.at(raw, 2, nil),
     }}
   end
 
   def deserialize(<<2, 2, ";", data :: binary>>) do
     raw = String.split(data, ";", trim: true)
+    {version, _} = Integer.parse(Enum.at(raw, 2, nil))
     {:new_path, %Game.Squad{
         name: Enum.at(raw, 0, nil),
-        path: Game.Path.deserialize(List.last(raw))
+        path: Game.Path.deserialize(Enum.at(raw, 1, nil)),
+        version: version
     }}
   end
 
   def deserialize(<<2, 3, ";", data :: binary>>) do
     raw = String.split(data, ";", trim: true)
+    {version, _} = Integer.parse(Enum.at(raw, 2, nil))
     {:new_formation, %Game.Squad{
         name: Enum.at(raw, 0, nil),
         formation: Enum.at(raw, 1, nil),
+        version: version
     }}
   end
 
   def deserialize(<<2, 4, ";", data :: binary>>) do
     raw = String.split(data, ";", trim: true)
+    {version, _} = Integer.parse(Enum.at(raw, 2, nil))
     {:skill_used, %Game.Squad{
         name: Enum.at(raw, 1, nil),
         offensive_skill: Enum.at(raw, 1, nil),
+        version: version
     }}
   end
 
