@@ -43,30 +43,36 @@ defmodule Conn.DeserializerPipe do
   def deserialize(<<2, 2, ";", data :: binary>>) do
     raw = String.split(data, ";", trim: true)
     {version, _} = Integer.parse(Enum.at(raw, 2, nil))
+    {timestamp, _} = Integer.parse(Enum.at(raw, 3, nil))
     {:new_path, %Game.Squad{
         name: Enum.at(raw, 0, nil),
         path: Game.Path.deserialize(Enum.at(raw, 1, nil)),
-        version: version
+        version: version,
+        timestamp: timestamp
     }}
   end
 
   def deserialize(<<2, 3, ";", data :: binary>>) do
     raw = String.split(data, ";", trim: true)
     {version, _} = Integer.parse(Enum.at(raw, 2, nil))
+    {timestamp, _} = Integer.parse(Enum.at(raw, 3, nil))
     {:new_formation, %Game.Squad{
         name: Enum.at(raw, 0, nil),
         formation: Enum.at(raw, 1, nil),
-        version: version
+        version: version,
+        timestamp: timestamp
     }}
   end
 
   def deserialize(<<2, 4, ";", data :: binary>>) do
     raw = String.split(data, ";", trim: true)
     {version, _} = Integer.parse(Enum.at(raw, 2, nil))
+    {timestamp, _} = Integer.parse(Enum.at(raw, 3, nil))
     {:skill_used, %Game.Squad{
         name: Enum.at(raw, 1, nil),
         offensive_skill: Enum.at(raw, 1, nil),
-        version: version
+        version: version,
+        timestamp: timestamp
     }}
   end
 

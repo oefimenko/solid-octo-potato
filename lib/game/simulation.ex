@@ -2,7 +2,7 @@
 defmodule Game.Simulation do
   use GenServer
 
-  @frequency 5
+  @frequency 0.1
 
   @doc ~S"""
   Game.Simulation:
@@ -75,55 +75,65 @@ defmodule Game.Simulation do
     {:noreply, state}
   end
 
-  def handle_call({:set_offset, offset}, _from, state) do
-    {:reply, {:ok}, %__MODULE__{state | offset: offset}}
-  end
+  # def handle_call({:set_offset, offset}, _from, state) do
+  #   {:reply, {:ok}, %__MODULE__{state | offset: offset}}
+  # end
 
-  def handle_cast({:init}, state) do
-    state.match |> Rooms.Match.outcoming(
-      {:init, Enum.map(Map.values(state.squads), fn s -> s.last end)}
-    )
-    {:noreply, state}
-  end
+  # def handle_cast({:init}, state) do
+  #   state.match |> Rooms.Match.outcoming(
+  #     {:init, Enum.map(Map.values(state.squads), fn s -> s.last end)}
+  #   )
+  #   {:noreply, state}
+  # end
 
-  def handle_cast({:squad_state, squad}, state) do
-    new_state = simulate_process(state, squad, :squad_state, [])
-    {:noreply, new_state}
-  end
+  # def handle_cast({:squad_state, squad}, state) do
+  #   new_state = simulate_state(state, squad)
+  #   {:noreply, new_state}
+  # end
 
-  def handle_cast({:new_path, squad}, state) do
-    new_state = simulate_process(state, squad, :new_path, [:path])
-    {:noreply, new_state}
-  end
+  # def handle_cast({:new_path, squad}, state) do
+  #   new_state = apply_state(state, squad, :new_path, [:path])
+  #   {:noreply, new_state}
+  # end
 
-  def handle_cast({:new_formation, squad}, state) do
-    new_state = simulate_process(state, squad, :new_formation, [:formation, :speed])
-    {:noreply, new_state}
-  end
+  # def handle_cast({:new_formation, squad}, state) do
+  #   new_state = apply_state(state, squad, :new_formation, [:formation, :speed])
+  #   {:noreply, new_state}
+  # end
 
-  def handle_cast({:skill_used, squad}, state) do
-    new_state = simulate_process(state, squad, :skill_used, [])
-    {:noreply, new_state}
-  end
+  # def handle_cast({:skill_used, squad}, state) do
+  #   new_state = apply_state(state, squad, :skill_used, [])
+  #   {:noreply, new_state}
+  # end
 
-  # Simulation proccess and command propagation
-  defp simulate_process(state, squad, type, fields) do
-    predicted = state.squads[squad.name]
-    |> Game.SquadSimulation.predicted_state_of(squad)
+  # # Simulate state and propogate
+  # # TODO: APPLY OFFSET
+  # defp simulate_state(state, squad) do
+  #   IO.inspect("################################################################################")
+  #   IO.inspect(state)
+  #   predicted = state.squads[squad.name]
+  #   |> Game.SquadSimulation.predicted_state_of(squad)
+
+  #   simulation = state.squads[squad.name] |> Game.SquadSimulation.update(predicted)
+  #   state.match |> Rooms.Match.outcoming({:squad_state, predicted})
+  #   %__MODULE__{state | squads: %{state.squads | squad.name => simulation}}
+  # end
+
+  # # Apply state to simulation and command propagate
+  # # TODO: !!!! APPLY OFFSET TO CURRENT TIME
+  # defp apply_state(state, incoming, type, fields) do
+  #   name = incoming.name
+  #   update = fields 
+  #   |> Enum.reduce(%{}, fn x, acc -> put_in(acc[x], Map.fetch!(incoming, x)) end)
     
-    update = fields 
-    |> Enum.reduce(%{}, fn x, acc -> put_in(acc[x], Map.fetch!(predicted, x)) end)
-    
-    real = %Game.Squad{
-      predicted | 
-      version: predicted.version + squad.checksum, 
-      checksum: squad.checksum
-    }
-    |> Map.merge(update)
+  #   predicted = state.squads[name]
+  #   |> Game.SquadSimulation.predicted_state_of(incoming)
 
-    simulation = state.squads[squad.name] |> Game.SquadSimulation.update(real)
-    state.match |> Rooms.Match.outcoming({type, real})
-    %__MODULE__{state | squads: %{state.squads | squad.name => simulation}}
-  end
+  #   real = predicted |> Map.merge(update)
+  #   simulation = state.squads[name] |> Game.SquadSimulation.update(real)
+    
+  #   state.match |> Rooms.Match.outcoming({type, simulation.last})
+  #   %__MODULE__{state | squads: %{state.squads | name => simulation}}
+  # end
 
 end

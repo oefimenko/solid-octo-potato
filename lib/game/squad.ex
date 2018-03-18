@@ -1,7 +1,7 @@
 
 defmodule Game.Squad do
   
-  @supported_squads [:skeletons, :spiders]
+  @supported_squads [:skeletons]
   
   @doc ~S"""
   Game Sqaud:
@@ -22,6 +22,7 @@ defmodule Game.Squad do
   formation :: string
   offensive_skill :: string
   defensive_skill :: string
+  movig :: bool
   """
 
   defstruct version: 0,
@@ -41,16 +42,18 @@ defmodule Game.Squad do
             bounds: nil,
             formation: nil,
             offensive_skill: nil,
-            defensive_skill: nil
+            defensive_skill: nil,
+            moving: false
 
   def init(:skeletons, name) do
-    %__MODULE__{type: "SkeletonSquad", name: name <> "Skeletons", owner: name}
+    %__MODULE__{
+      type: "SkeletonSquad",
+      name: name <> "Skeletons",
+      owner: name,
+      speed: %Game.Vector{x: 2.0, y: 450.0}
+    }
   end
   
-  def init(:spiders, name) do
-    %__MODULE__{type: "SpiderSquad", name: name <> "Spiders", owner: name}
-  end
-
   def init(name) do
     init(Enum.random(@supported_squads), name)
   end
@@ -72,5 +75,5 @@ defmodule Game.Squad do
     "#{Game.Vector.serialize(squad.local_aim)}:" <>     #16-17
     "#{Game.Path.serialize(squad.path)}"                #18-end
   end
-  
+
 end

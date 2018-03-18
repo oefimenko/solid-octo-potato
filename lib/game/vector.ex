@@ -25,7 +25,7 @@ defmodule Game.Vector do
     :math.pow(vector_1.x - vector_2.x, 2) + :math.pow(vector_1.y - vector_2.y, 2) |> :math.sqrt
   end
 
-  def normilize(%__MODULE__{:x => 0, :y => 0}) do
+  def normalize(%__MODULE__{:x => 0, :y => 0}) do
     %__MODULE__{x: 0, y: 0}
   end
 
