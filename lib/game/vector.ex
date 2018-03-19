@@ -20,7 +20,11 @@ defmodule Game.Vector do
     points = raw.split(":")
     %__MODULE__{x: Enum.at(points, 0), y: Enum.at(points, 1)}
   end
-  
+
+  def new(x, y) do
+    %__MODULE__{x: x, y: y}
+  end
+
   def distance(vector_1, vector_2) do
     :math.pow(vector_1.x - vector_2.x, 2) + :math.pow(vector_1.y - vector_2.y, 2) |> :math.sqrt
   end

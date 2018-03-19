@@ -34,6 +34,10 @@ defmodule Game.Path do
     %__MODULE__{points: points_list, total: length(points_list)}
   end
 
+  def new(points_list) do
+    %__MODULE__{points: points_list, total: length(points_list)}
+  end
+
   def move_for(path, current, distance) do
     next_point = path.points |> Enum.at(path.next_point)
     move_for(path, current, next_point, distance, Vector.distance(current, next_point))
