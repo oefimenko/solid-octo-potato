@@ -129,12 +129,47 @@ defmodule SquadSimulationTest do
     end
   end
 
+  test "Can calculate predicted state for squad_simulation (staying)", state do
+    expected_sqd_state = %Squad{state.squad | timestamp: 1}
+    assert SquadSimulation.state_on(state.squad_simulation, 1) == expected_sqd_state
+  end
 
-  
-#   test "Can calculate predicted state for squad_simulation", state do
-#     # 3 asserts in one
-#     assert 1 + 1 == 1
-#   end
+  test "Can calculate predicted state for squad_simulation (mooving)", state do
+    squad = %Squad{state.squad | moving: true, path: @path_1, position: Vector.new(0, 0)}
+    squad_simulation = %{state.squad_simulation | states: [squad], last: squad}
+    expected_sqd_state = %Squad{squad | 
+      timestamp: 3000000,
+      position: nil,
+      path: %Path{@path_1 | next_point: 2}
+    }
+    expected_position = Vector.new(4.24264, 4.24264)
+    calculated_state = SquadSimulation.state_on(squad_simulation, 3000000)
+    calculated_position = calculated_state.position
+
+    assert %Squad{calculated_state | position: nil} == expected_sqd_state
+    assert_in_delta expected_position.x, calculated_position.x, 0.005
+    assert_in_delta expected_position.y, calculated_position.y, 0.005
+  end
+
+  test "Can calculate predicted state for squad_simulation (mooving) not from last state", state do
+    squad = %Squad{state.squad | moving: false, path: @path_1, position: Vector.new(0, 0)}
+    current_squad = %Squad{squad | timestamp: 2000000, path: @path_1, moving: true }
+    future_squad = %Squad{squad | timestamp: 5000000, path: @path_1, moving: false }
+    squad_simulation = %{state.squad_simulation | states: [squad, current_squad, future_squad], last: future_squad}
+    expected_sqd_state = %Squad{current_squad | 
+      timestamp: 3000000,
+      position: nil,
+      path: %Path{@path_1 | next_point: 1}
+    }
+    expected_position = Vector.new(1.41421, 1.41421)
+    calculated_state = SquadSimulation.state_on(squad_simulation, 3000000)
+    calculated_position = calculated_state.position
+
+    assert %Squad{calculated_state | position: nil} == expected_sqd_state
+    assert_in_delta expected_position.x, calculated_position.x, 0.005
+    assert_in_delta expected_position.y, calculated_position.y, 0.005
+  end
+
 
 #   test "Can calculate predicted state and store it", state do
 #     # 3 asserts in one

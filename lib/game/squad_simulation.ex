@@ -5,7 +5,7 @@ defmodule Game.SquadSimulation do
 
   @doc ~S"""
   Game SquadSimulation:
-  states :: Keyword [{timestamp: state} ]
+  states :: [state]
   last :: Game.Squad
   """
   defstruct states: nil,
@@ -36,7 +36,7 @@ defmodule Game.SquadSimulation do
   # Private functions
 
   defp previous_state(sqd_simulation, timestamp) do
-    Enum.find(sqd_simulation.states, fn x -> x.timestamp <= timestamp end)
+    Enum.take_while(sqd_simulation.states, fn(x) -> x.timestamp <= timestamp end) |> Enum.at(-1)
   end
 
 
